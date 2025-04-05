@@ -166,7 +166,7 @@ Spinner extends HTMLElement {
 		`
 	}
 }
-//	customElements.define( 'slip-spinner', Spinner )
+customElements.define( 'sat-spinner', Spinner )
 
 export class
 Button extends HTMLButtonElement {
@@ -181,7 +181,7 @@ Button extends HTMLButtonElement {
 		)
 	}
 }
-//	customElements.define( 'slip-button', Button, { extends: 'button' } )
+customElements.define( 'sat-button', Button, { extends: 'button' } )
 
 export class
 OverlayButton extends HTMLButtonElement {
@@ -198,8 +198,7 @@ OverlayButton extends HTMLButtonElement {
 			this.CreateOverlay()
 		,	overlay => (
 				this.disabled = true
-			,	overlay.style.position		= 'absolute'
-			,	overlay.style.height		= '100%'
+			,	overlay.style.position	= 'absolute'
 			,	this.appendChild( overlay )
 			,	this.CreatePromise().finally(
 					() => (
@@ -211,7 +210,7 @@ OverlayButton extends HTMLButtonElement {
 		)
 	}
 }
-//	customElements.define( 'slip-overlay-button', OverlayButton, { extends: 'button' } )
+customElements.define( 'sat-overlay-button', OverlayButton, { extends: 'button' } )
 
 //	OverlayButton EXAMPLE
 //	class
