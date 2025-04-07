@@ -148,6 +148,21 @@ FetchAlert = _ => (
 )
 
 ////////////////////////////////////////////////////////////////
+
+export const
+ExpandTab = ( _, nSpaces = 4 ) => _.split( '\n' ).map(
+	_ => [ ..._ ].reduce(
+		( $, _ ) => (
+			$ += _ === '\t'
+			?	' '.repeat( nSpaces - ( $.length % nSpaces ) )
+			:	_
+		,	$
+		)
+	,	''
+	)
+).join( '\n' )
+
+////////////////////////////////////////////////////////////////
 export class
 Spinner extends HTMLElement {
 	constructor() {
