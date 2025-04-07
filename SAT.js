@@ -153,13 +153,15 @@ Spinner extends HTMLElement {
 	constructor() {
 		super()
 
-		this.style.display = 'inline-block'
-		this.style.animation = 'spin 2s linear infinite'
 		this.attachShadow( { mode: 'open' } ).innerHTML = `
 			<style>
 				@keyframes spin {
 					from	{ transform: rotate( 0deg	) }
 					to		{ transform: rotate( 360deg	) }
+				}
+				:host {
+				;	display		: inline-block
+				;	animation	: spin 2s linear infinite
 				}
 			</style>
 			<slot></slot>
