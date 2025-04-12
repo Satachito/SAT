@@ -142,7 +142,7 @@ FetchDOM = ( _, options = {} ) => FetchText( _, options ).then(
 )
 
 export const
-FetchAlert = _ => (
+AlertForFetch = _ => (
 	( _ instanceof Error	) && Alert( _ )
 ,	( _ instanceof Response	) && Alert( `${ _.status }: ${ _.statusText }` )
 )
