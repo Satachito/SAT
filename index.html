@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang=en>
+
+<meta charset=UTF-8>
+<title>VanillaJS</title>
+
+<style>
+
+body {
+;	margin			: 0
+;	background-color: lightblue
+}
+
+button {
+;	width			: 12rem
+;	height			: 1.5rem
+}
+
+.rem1 {
+;	width			: 1rem
+;	height			: 1rem
+}
+
+.vFit {
+;	height			: 100%
+;	aspect-ratio	: 1 / 1
+}
+
+.packmanLoader {
+;	box-sizing		: border-box
+;	border			: 3px solid black
+;	border-top		: 3px solid transparent
+;	border-radius	: 50%
+}
+
+.circleLoader {
+;	box-sizing		: border-box
+;	border			: 3px solid rgba( 255, 255, 255, 0.5 )
+;	border-top		: 3px solid rgba( 255, 255, 255, 1.0 )
+;	border-radius	: 50%
+}
+
+.circle		{ border-radius		: 50%		}
+.relative	{ position			: relative	}
+.absolute	{ position			: absolute	}
+.black		{ background-color	: black		}
+.lightgray	{ background-color	: lightgray	}
+.red		{ background-color	: red		}
+
+</style>
+<style>
+.dot-elastic, .dot-elastic::before, .dot-elastic::after {
+;	background-color	: #9880ff
+;	color				: #9880ff
+;	border-radius		: 50%
+;	width				: 0.8rem
+;	height				: 0.8rem
+}
+.dot-elastic {
+;	position			: relative
+;	animation			: dot-elastic 1s infinite linear
+}
+.dot-elastic::before, .dot-elastic::after {
+;	position			: absolute
+;	content				: ""
+}
+.dot-elastic::before {
+;	left				: -150%
+;	animation			: dot-elastic-before 1s infinite linear
+}
+.dot-elastic::after {
+;	left				: 150%
+;	animation			: dot-elastic-after 1s infinite linear
+}
+
+@keyframes dot-elastic-before {
+	0%		{ transform: scale( 1, 1	); }
+	25%		{ transform: scale( 1, 1.5	); }
+	50%		{ transform: scale( 1, 0.67	); }
+	75%		{ transform: scale( 1, 1	); }
+	100%	{ transform: scale( 1, 1	); }
+}
+@keyframes dot-elastic {
+	0%		{ transform: scale( 1, 1	); }
+	25%		{ transform: scale( 1, 1	); }
+	50%		{ transform: scale( 1, 1.5	); }
+	75%		{ transform: scale( 1, 1	); }
+	100%	{ transform: scale( 1, 1	); }
+}
+@keyframes dot-elastic-after {
+	0%		{ transform: scale( 1, 1	); }
+	25%		{ transform: scale( 1, 1	); }
+	50%		{ transform: scale( 1, 0.67	); }
+	75%		{ transform: scale( 1, 1.5	); }
+	100%	{ transform: scale( 1, 1	); }
+}
+
+</style>
+
+Spinner<br>
+<sat-spinner>ABC</sat-spinner>
+<sat-spinner class="rem1 black"></sat-spinner>
+<sat-spinner class=rem1 style="font-size: 100%; line-height: 88%">⭐️</sat-spinner>
+<sat-spinner class=rem1 style="font-size: 100%; line-height: 88%">.</sat-spinner>
+<sat-spinner class="rem1 packmanLoader"></sat-spinner>
+<sat-spinner class="rem1 circleLoader"></sat-spinner>
+
+<sat-spinner class="rem1 relative circle" style="border: 1px solid black">
+	<div class="circle black absolute" style="width: 20%; height: 20%; left	: 40%; bottom	: 0"></div>
+	<div class="circle black absolute" style="width: 20%; height: 20%; left	: 40%; top		: 0"></div>
+	<div class="circle black absolute" style="width: 20%; height: 20%; top	: 40%; left		: 0"></div>
+	<div class="circle black absolute" style="width: 20%; height: 20%; top	: 40%; right	: 0"></div>
+</sat-spinner>
+
+<hr>
+
+Plane button<br>
+<button 						id=PLANE_BUTTON		>PLANE					</button>
+再入されてしまう
+<hr>
+
+Button<br>
+<button is=sat-button			id=BUTTON_S			>Button(RESOLVE)		</button>
+<button is=sat-button			id=BUTTON_J			>Button(REJECT)			</button>
+<hr>
+
+Overlaybutton<br>
+<button is=sat-overlay-button	id=OVERLAY_BUTTON_S	>OverlayButton(RESOLVE)	</button>
+<button is=sat-overlay-button	id=OVERLAY_BUTTON_J	>OverlayButton(REJECT)	</button>
+<hr>
+
+Spin button<br>
+<button is=spin-button			id=SPIN_BUTTON		>SPIN BUTTON			</button>
+
+<button is=sat-overlay-button id=OVERLAY_ELASTIC>Overlay Elastic</button>
+
+<hr>
+
+<script type=module>
+
+import { Alert, FetchJSON, AlertForFetch, Spinner, Button, OverlayButton } from './SAT.js'
+
+//	これだとfetchしてる間にボタンが押されてしまう。
+PLANE_BUTTON.onclick = ev => (
+	console.log( 'PLANE_BUTTON.onclick' )
+,	FetchJSON(
+		'https://api.allorigins.win/get?url=' + encodeURIComponent( 'https://postman-echo.com/delay/1' )
+	).then( console.log ).catch( AlertForFetch )
+)
+
+//	WAIT BUTTONS
+const
+FetchDelay = () => FetchJSON(
+	'https://api.allorigins.win/get?url=' + encodeURIComponent( 'https://postman-echo.com/delay/1' )
+).then( _ => console.log( 'OK:', _ ) ).catch( AlertForFetch )
+
+const
+Timeout1000 = () => new Promise( ( S, J ) => setTimeout( () => J( 'REJECT' ), 1000 ) ).catch( Alert )
+
+const
+PackmanSpinner = () => {
+	const
+	$ = new Spinner()
+	$.classList.add( 'vFit', 'packmanLoader' )
+	return $
+}
+
+BUTTON_S			.CreatePromise = FetchDelay
+BUTTON_J			.CreatePromise = Timeout1000
+
+OVERLAY_BUTTON_S	.CreatePromise = FetchDelay
+OVERLAY_BUTTON_S	.CreateOverlay = PackmanSpinner
+
+OVERLAY_BUTTON_J	.CreatePromise = Timeout1000
+OVERLAY_BUTTON_J	.CreateOverlay = PackmanSpinner
+
+//	ALL IN ONE BUTTON
+class
+SpinButton extends OverlayButton {
+	constructor() {
+		super()
+
+		this.CreateOverlay = () => {
+			const
+			$ = new Spinner()
+			$.style.height			= '100%'
+			$.style.aspectRatio		= '1 / 1'
+			$.style.boxSizing		= 'border-box'
+			$.style.border			= '5px solid black'
+			$.style.borderTop		= '5px solid transparent'
+			$.style.borderRadius	= '50%'
+			return $
+		}
+	}
+}
+customElements.define( 'spin-button', SpinButton, { extends: 'button' } )
+
+SPIN_BUTTON.CreatePromise = Timeout1000
+
+OVERLAY_ELASTIC.CreatePromise = Timeout1000
+OVERLAY_ELASTIC.CreateOverlay = () => {
+	const
+	$ = document.createElement( 'div' )
+	$.classList.add( 'dot-elastic' )
+	return $
+}
+
+
+</script>
+
+</html>
+
