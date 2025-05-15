@@ -4,69 +4,69 @@ import path	from 'path'
 import fs	from 'fs'
 
 const
-On			= ( _, $ ) => _ ? ( $( _ ), true ) : false
+PathName = Q => decodeURIComponent( url.parse( Q.url, true ).pathname )
 
 const
-PathName	= Q => decodeURIComponent( url.parse( Q.url, true ).pathname )
+API = async ( Q, S, APIs ) => {
+	const
+	API = APIs[ PathName( Q ) ]
+
+	if ( !API ) return false
+
+	try {
+		await API( Q, S )
+	} catch ( e ) {
+		console.error( e )
+		S.writeHead( 500, { 'Content-Type': 'text/plain' } )
+		S.end( 'Internal Server Error' )
+	}
+	return true
+}
 
 const
-API			= ( Q, S, APIs ) => On( APIs[ PathName( Q ) ], _ => _( Q, S ) )
-
-const
-_404		= S => (
-	S.statusCode = 404
+_404 = S => (
+	S.writeHead( 404, { 'Content-Type': 'text/plain' } )
 ,	S.end( 'Not Found' )
 )
 
 export const
-API_SERVER	= APIs => http.createServer(
-	( Q, S ) => API( Q, S, APIs ) || _404( S )
+API_SERVER = APIs => http.createServer(
+	async ( Q, S ) => await API( Q, S, APIs ) || _404( S )
 )
 
-import { fileURLToPath } from 'url'
 const
-Static	= ( Q, S, dirREL ) => {
+MimeTypes = {
+	'.html'	: 'text/html'
+,	'.js'	: 'application/javascript'
+,	'.css'	: 'text/css'
+,	'.json'	: 'application/json'
+,	'.png'	: 'image/png'
+,	'.jpg'	: 'image/jpeg'
+,	'.gif'	: 'image/gif'
+,	'.svg'	: 'image/svg+xml'
+}
+
+const
+Static = ( Q, S, dir ) => {
 
 	const
-	dir = path.resolve( 
-		path.dirname( fileURLToPath( import.meta.url ) )
-	,	dirREL
-	)
-	if( !fs.existsSync( dir ) ) throw new Error( `No ${dirREL} dir.` )
+	name = path.join( dir, PathName( Q ) )
 
 	const
-	SendFile = _ => {
-		const
-		mimeTypes = {
-			'.html'	: 'text/html'
-		,	'.js'	: 'application/javascript'
-		,	'.css'	: 'text/css'
-		,	'.json'	: 'application/json'
-		,	'.png'	: 'image/png'
-		,	'.jpg'	: 'image/jpeg'
-		,	'.gif'	: 'image/gif'
-		,	'.svg'	: 'image/svg+xml'
-		}
-		S.writeHead(
-			200
-		,	{ 'Content-Type': mimeTypes[ path.extname( _ ) ] || 'application/octet-stream' }
+	SendFile = _ => fs.existsSync( _ ) && fs.statSync( _ ).isFile() 
+	?	(	S.writeHead(
+				200
+			,	{ 'Content-Type': MimeTypes[ path.extname( _ ) ] || 'application/octet-stream' }
+			)
+		,	fs.createReadStream( _ ).pipe( S )
+		,	true
 		)
-		fs.createReadStream( _ ).pipe( S )
-	}
+	:	false
 
-	try {
-		const
-		name = path.join( dir, PathName( Q ) )
+	if ( SendFile( name								) ) return true
+	if ( SendFile( path.join( name, 'index.html' )	) ) return true
 
-		SendFile(
-			fs.statSync( name ).isFile()
-			?	name
-			:	path.join( name, 'index.html' )
-		)
-		return true
-	} catch( e ) {
-		return false
-	}
+	return false
 }
 
 export const
@@ -75,9 +75,18 @@ STATIC_SERVER = dirREL => http.createServer(
 )
 
 export const
-API_STATIC_SERVER = ( APIs, dirREL ) => http.createServer(
-	( Q, S ) => API( Q, S, APIs ) || Static( Q, S, dirREL ) || _404( S )
-)
+API_STATIC_SERVER = ( APIs, dirREL ) => {
+	const
+	dir = path.resolve( 
+		process.cwd()
+	,	dirREL
+	)
+	if( !fs.existsSync( dir ) ) throw `No ${dir}.`
+
+	return http.createServer(
+		async ( Q, S ) => await API( Q, S, APIs ) || Static( Q, S, dir ) || _404( S )
+	)
+}
 
 export const
 Send = ( S, _, type ) => (	//	_ must be Uint8Array
@@ -92,3 +101,7 @@ Send = ( S, _, type ) => (	//	_ must be Uint8Array
 
 export const
 SendJSONable = ( S, _ ) => Send( S, Buffer.from( JSON.stringify( _ ) ), 'application/json' )
+
+export const
+SendHTML = ( S, _ ) => Send( S, Buffer.from( _ ), 'text/html' )
+
