@@ -4,7 +4,14 @@ import path	from 'path'
 import fs	from 'fs'
 
 const
-PathName = Q => decodeURIComponent( url.parse( Q.url, true ).pathname )
+PathName = Q => decodeURIComponent( new URL( Q.url, `http://${Q.headers.host}` ).pathname )
+
+const
+AccessControl = S => {
+	S.setHeader( 'Access-Control-Allow-Origin'	, '*' )
+	S.setHeader( 'Access-Control-Allow-Methods'	, 'GET, POST, OPTIONS' )
+	S.setHeader( 'Access-Control-Allow-Headers'	, 'Content-Type' )
+}
 
 const
 API = async ( Q, S, APIs ) => {
@@ -69,19 +76,28 @@ Static = ( Q, S, dir ) => {
 	return false
 }
 
+const
+ExistingAbsolutePath = _ => {
+	const
+	dir = path.resolve( process.cwd(), _ )
+	if( !fs.existsSync( dir ) ) throw `No ${dir}.`
+	return dir
+}
+
 export const
-STATIC_SERVER = dirREL => http.createServer(
-	( Q, S ) => Static( Q, S, dirREL ) || _404( S )
-)
+STATIC_SERVER = dirREL => {
+	const
+	dir = ExistingAbsolutePath( dirREL )
+
+	return http.createServer(
+		( Q, S ) => Static( Q, S, dir ) || _404( S )
+	)
+}
 
 export const
 API_STATIC_SERVER = ( APIs, dirREL ) => {
 	const
-	dir = path.resolve( 
-		process.cwd()
-	,	dirREL
-	)
-	if( !fs.existsSync( dir ) ) throw `No ${dir}.`
+	dir = ExistingAbsolutePath( dirREL )
 
 	return http.createServer(
 		async ( Q, S ) => await API( Q, S, APIs ) || Static( Q, S, dir ) || _404( S )
