@@ -7,10 +7,18 @@ const
 PathName = Q => decodeURIComponent( new URL( Q.url, `http://${Q.headers.host}` ).pathname )
 
 const
-AccessControl = S => {
-	S.setHeader( 'Access-Control-Allow-Origin'	, '*' )
-	S.setHeader( 'Access-Control-Allow-Methods'	, 'GET, POST, OPTIONS' )
-	S.setHeader( 'Access-Control-Allow-Headers'	, 'Content-Type' )
+AccessControl = ( Q, S ) => {
+	console.log( Q.method, PathName( Q ) )
+	Q.method === 'OPTIONS'
+	? (	S.writeHead(204)
+	,	S.end()
+	,	true
+	)
+	: (	S.setHeader( 'Access-Control-Allow-Origin'	, '*' )
+	,	S.setHeader( 'Access-Control-Allow-Methods'	, 'GET, POST, OPTIONS' )
+	,	S.setHeader( 'Access-Control-Allow-Headers'	, 'Content-Type' )
+	,	false
+	)
 }
 
 const
@@ -38,7 +46,7 @@ _404 = S => (
 
 export const
 API_SERVER = APIs => http.createServer(
-	async ( Q, S ) => await API( Q, S, APIs ) || _404( S )
+	async ( Q, S ) => AccessControl( Q, S ) || await API( Q, S, APIs ) || _404( S )
 )
 
 const
@@ -54,24 +62,24 @@ MimeTypes = {
 }
 
 const
-Static = ( Q, S, dir ) => {
+Static = async ( Q, S, dir ) => {
 
 	const
 	name = path.join( dir, PathName( Q ) )
 
 	const
-	SendFile = _ => fs.existsSync( _ ) && fs.statSync( _ ).isFile() 
-	?	(	S.writeHead(
-				200
-			,	{ 'Content-Type': MimeTypes[ path.extname( _ ) ] || 'application/octet-stream' }
-			)
-		,	fs.createReadStream( _ ).pipe( S )
-		,	true
+	SendFile = async _ => ( await fs.promises.stat( _ ) ).isFile() 
+	? (	S.writeHead(
+			200
+		,	{ 'Content-Type': MimeTypes[ path.extname( _ ) ] || 'application/octet-stream' }
 		)
+	,	fs.createReadStream( _ ).pipe( S )
+	,	true
+	)
 	:	false
 
-	if ( SendFile( name								) ) return true
-	if ( SendFile( path.join( name, 'index.html' )	) ) return true
+	if ( await SendFile( name								) ) return true
+	if ( await SendFile( path.join( name, 'index.html' )	) ) return true
 
 	return false
 }
@@ -90,7 +98,7 @@ STATIC_SERVER = dirREL => {
 	dir = ExistingAbsolutePath( dirREL )
 
 	return http.createServer(
-		( Q, S ) => Static( Q, S, dir ) || _404( S )
+		async ( Q, S ) => AccessControl( Q, S ) || await Static( Q, S, dir ) || _404( S )
 	)
 }
 
@@ -100,7 +108,7 @@ API_STATIC_SERVER = ( APIs, dirREL ) => {
 	dir = ExistingAbsolutePath( dirREL )
 
 	return http.createServer(
-		async ( Q, S ) => await API( Q, S, APIs ) || Static( Q, S, dir ) || _404( S )
+		async ( Q, S ) => AccessControl( Q, S ) || await API( Q, S, APIs ) || await Static( Q, S, dir ) || _404( S )
 	)
 }
 
