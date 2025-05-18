@@ -20,10 +20,10 @@ ReadAsText = _ => ( //	_ : <input type=file>
 ,	Promise.all(
 		Array.from( _.files ).map(
 			_ => new Promise(
-				( S, J ) => {
+				( R, J ) => {
 					const
 					$ = new FileReader()
-					$.onload = () => S( $.result )
+					$.onload = () => R( $.result )
 					$.onerror = () => J( $.error )
 					$.readAsText( _ )
 				}
