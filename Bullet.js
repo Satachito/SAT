@@ -172,16 +172,6 @@ SendJSONable = ( S, _ ) => Send( S, Buffer.from( JSON.stringify( _ ) ), 'applica
 export const
 SendHTML = ( S, _ ) => Send( S, Buffer.from( _ ), 'text/html' )
 
-/*
-export const
-SendFile = ( S, _ ) => (
-	S.writeHead(
-		200
-	,	{ 'Content-Type': MimeTypes[ path.extname( _ ) ] || 'application/octet-stream' }
-	)
-,	fs.createReadStream( _ ).pipe( S )
-)
-*/
 export const
 SendFile = async ( S, _ ) => new Promise(
 	( R, J ) => {
@@ -207,3 +197,13 @@ Body = Q => new Promise(
 	}
 )
 
+export const
+BodyAsJSON = async Q => JSON.parse( await Body( Q ) )
+/*
+export const
+BodyAsJSON = async Q => {
+	const
+	body = await Body( Q )
+	return JSON.parse( body )
+}
+*/
