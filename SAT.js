@@ -147,6 +147,14 @@ AlertForFetch = _ => (
 ,	( _ instanceof Response	) && Alert( `${ _.status }: ${ _.statusText }` )
 )
 
+export const
+PostJSON = async ( _, $ ) => await FetchJSON(
+	_
+,	{	method	: 'POST'
+	,	headers	: { 'Content-Type': 'application/json' }
+	,	body	: JSON.stringify( $ )
+	}
+)
 ////////////////////////////////////////////////////////////////
 
 export const
