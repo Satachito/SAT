@@ -97,10 +97,25 @@ SaveJSON = ( _, options ) => Save( JSON.stringify( _ ), options )
 //		}
 //	)
 
+////////////////////////////////////////////////////////////////
+
+export const
+ExpandTab = ( _, nSpaces = 4 ) => _.split( '\n' ).map(
+	_ => [ ..._ ].reduce(
+		( $, _ ) => (
+			$ += _ === '\t'
+			?	' '.repeat( nSpaces - ( $.length % nSpaces ) )
+			:	_
+		,	$
+		)
+	,	''
+	)
+).join( '\n' )
 
 ////////////////////////////////////////////////////////////////
 //	URLが存在しない場合 fetch 自体が TypeError( 'TypeError', 'Failed to fetch' ) を throw してくる
-//	これらを　catch したら、FetchAlertを呼ぼう
+//	response.ok が false の場合、response 自体を throw する
+//	chatch した時のために AlertForFetch を用意してある。
 
 export const
 FetchJSON = ( _, options = {} ) => fetch( _, options ).then(
@@ -155,18 +170,3 @@ PostJSON = async ( _, $ ) => await FetchJSON(
 	,	body	: JSON.stringify( $ )
 	}
 )
-////////////////////////////////////////////////////////////////
-
-export const
-ExpandTab = ( _, nSpaces = 4 ) => _.split( '\n' ).map(
-	_ => [ ..._ ].reduce(
-		( $, _ ) => (
-			$ += _ === '\t'
-			?	' '.repeat( nSpaces - ( $.length % nSpaces ) )
-			:	_
-		,	$
-		)
-	,	''
-	)
-).join( '\n' )
-
