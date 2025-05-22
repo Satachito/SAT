@@ -3,29 +3,62 @@ import url	from 'url'
 import path	from 'path'
 import fs	from 'fs'
 
-const
-_400 = S => (
-	S.writeHead( 403, { 'Content-Type': 'text/plain' } )
-,	S.end( 'Bad request.' )
+export const
+SendFile = ( S, _ ) => new Promise(
+	( R, J ) => {
+		S.writeHead(
+			200
+		,	{ 'Content-Type': MimeTypes[ path.extname( _ ) ] || 'application/octet-stream' }
+		)
+		const
+		$ = fs.createReadStream( _ )
+		$.on( 'error', E => J( E ) )
+		$.on( 'end', () => R() )
+		$.pipe( S )
+	}
 )
 
-const
-_403 = S => (
-	S.writeHead( 403, { 'Content-Type': 'text/plain' } )
-,	S.end( 'Forbidden.' )
+export const
+Send = ( S, status = 200, _ = '', type = 'text/plain' ) => (
+	S.writeHead(
+		status
+	,	{	'Content-Type'	: type
+		,	'Content-Length': Buffer.from( _ ).byteLength
+		}
+	)
+,	S.end( _ )
 )
 
-const
-_404 = S => (
-	S.writeHead( 404, { 'Content-Type': 'text/plain' } )
-,	S.end( 'Not found.' )
+export const
+SendJSONable = ( S, _ ) => Send( S, 200, JSON.stringify( _ ), 'application/json' )
+
+export	const
+_400 = S => Send( S, 400, 'Bad request.' )
+
+export	const
+_401 = S => Send( S, 401, 'Unauthorized.' )
+
+export	const
+_403 = S => Send( S, 403, 'Forbidden.' )
+
+export	const
+_404 = S => Send( S, 404, 'Not found.' )
+
+export	const
+_500 = S => Send( S, 500, 'Internal server error.' )
+
+export const
+Body = Q => new Promise(
+	( R, J ) => {
+		let $ = ''
+		Q.on( 'data', _ => $ += _ )
+		Q.on( 'end', () => R( $ ) )
+		Q.on( 'error', E => J( E ) )
+	}
 )
 
-const
-_500 = ( S, e ) => (
-	S.writeHead( 500, { 'Content-Type': 'text/plain' } )
-,	S.end( 'Internal server error.' )
-)
+export const
+BodyAsJSON = async Q => JSON.parse( await Body( Q ) )
 
 const	//	THROWS, CATCH IT
 PathName = Q => decodeURIComponent( new URL( Q.url, `http://${Q.headers.host}` ).pathname )
@@ -53,8 +86,8 @@ API = async ( Q, S, APIs ) => {
 	} catch ( e ) {
 		setTimeout( () => console.error( e ) )
 		e instanceof URIError
-		?	_400( S, e )
-		:	_500( S, e )
+		?	_400( S )
+		:	_500( S )
 	}
 	return true
 }
@@ -106,8 +139,8 @@ Static = async ( Q, S, dir ) => {
 		if ( e.code !== 'ENOENT' && e.code !== 'EACCESS' ) {
 			setTimeout( () => console.error( e ) )
 			e instanceof URIError
-			?	_400( S, e )
-			:	_500( S, e )
+			?	_400( S )
+			:	_500( S )
 			return true
 		}
 	}
@@ -142,6 +175,7 @@ CORS_API_SERVER = APIs => http.createServer(
 		: (	_404( S )
 		,	LOG( '404', Q )
 		)
+	//
 )
 
 export const
@@ -170,6 +204,7 @@ CORS_STATIC_SERVER = dirREL => {
 			: (	_404( S )
 			,	LOG( '404', Q )
 			)
+		//
 	)
 }
 
@@ -187,6 +222,7 @@ API_STATIC_SERVER = ( APIs, dirREL ) => {
 				: (	_404( S )
 				,	LOG( '404', Q )
 				)
+			//
 		}
 	)
 }
@@ -205,58 +241,8 @@ CORS_API_STATIC_SERVER = ( APIs, dirREL ) => {
 				: (	_404( S )
 				,	LOG( '404', Q )
 				)
+			//
+		//
 	)
 }
 
-export const
-Send = ( S, _, type ) => (	//	_ must be Uint8Array
-	S.writeHead(
-		200
-	,	{	'Content-Type'	: type
-		,	'Content-Length': _.byteLength
-		}
-	)
-,	S.end( _ )
-)
-
-export const
-SendJSONable = ( S, _ ) => Send( S, Buffer.from( JSON.stringify( _ ) ), 'application/json' )
-
-export const
-SendHTML = ( S, _ ) => Send( S, Buffer.from( _ ), 'text/html' )
-
-export const
-SendFile = ( S, _ ) => new Promise(
-	( R, J ) => {
-		S.writeHead(
-			200
-		,	{ 'Content-Type': MimeTypes[ path.extname( _ ) ] || 'application/octet-stream' }
-		)
-		const
-		$ = fs.createReadStream( _ )
-		$.on( 'error', e => J( e ) )
-		$.on( 'end', () => R() )
-		$.pipe( S )
-	}
-)
-
-export const
-Body = Q => new Promise(
-	( R, J ) => {
-		let $ = ''
-		Q.on( 'data', _ => $ += _ )
-		Q.on( 'end', () => R( $ ) )
-		Q.on( 'error', e => J( e ) )
-	}
-)
-
-export const
-BodyAsJSON = async Q => JSON.parse( await Body( Q ) )
-/*
-export const
-BodyAsJSON = async Q => {
-	const
-	body = await Body( Q )
-	return JSON.parse( body )
-}
-*/
