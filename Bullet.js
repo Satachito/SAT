@@ -246,3 +246,34 @@ CORS_API_STATIC_SERVER = ( APIs, dirREL ) => {
 	)
 }
 
+import crypto from 'crypto'
+
+import {
+	parse
+,	serialize
+} from 'cookie'
+
+const
+Sign = _ => crypto.createHmac(
+	'sha256'
+,	process.env.SESSION_SECRET
+).update( _ ).digest( 'hex' )
+
+export const
+SerializeSessionCookie = sessionID => serialize(
+	'session'
+,	`${ sessionID }.${ Sign( sessionID ) }`
+,	{ httpOnly: true, path: '/', sameSite: 'lax', secure: false, maxAge: 60 * 60 * 24 * 7 }
+)
+
+export const
+ParseSessionCookie = cookie => {
+	const
+	session = parse( cookie ).session
+	if ( !session ) throw new Error( 'No session cookie' )
+
+	const [ sessionID, signature ] = session.split( '.' )
+	if ( Sign( sessionID ) !== signature ) throw new Error( 'Invalid session signature' )
+	return sessionID
+}
+
