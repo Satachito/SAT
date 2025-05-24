@@ -33,19 +33,19 @@ export const
 SendJSONable = ( S, _ ) => Send( S, 200, JSON.stringify( _ ), 'application/json' )
 
 export	const
-_400 = S => Send( S, 400, 'Bad request.' )
+_400 = ( S, _ = 'Bad request.'				) => Send( S, 400, _ )
 
 export	const
-_401 = S => Send( S, 401, 'Unauthorized.' )
+_401 = ( S, _ = 'Unauthorized.'				) => Send( S, 401, _ )
 
 export	const
-_403 = S => Send( S, 403, 'Forbidden.' )
+_403 = ( S, _ = 'Forbidden.'				) => Send( S, 403, _ )
 
 export	const
-_404 = S => Send( S, 404, 'Not found.' )
+_404 = ( S, _ = 'Not found.'				) => Send( S, 404, _ )
 
 export	const
-_500 = S => Send( S, 500, 'Internal server error.' )
+_500 = ( S, _ = 'Internal server error.'	) => Send( S, 500, _ )
 
 export const
 Body = Q => new Promise(
