@@ -67,17 +67,41 @@ PathName = Q => decodeURIComponent( new URL( Q.url, 'http://localhost' ).pathnam
 //PathName = Q => decodeURIComponent( new URL( Q.url, `http://${Q.headers.host}` ).pathname )
 
 const
-AccessControl = ( Q, S ) => (
-	S.setHeader( 'Access-Control-Allow-Origin'	, '*' )
-,	S.setHeader( 'Access-Control-Allow-Methods'	, 'GET, POST, OPTIONS' )
-,	S.setHeader( 'Access-Control-Allow-Headers'	, 'Content-Type' )
-,	Q.method === 'OPTIONS'
-	? (	S.writeHead(204)
-	,	S.end()
-	,	true
-	)
-	:	false
-)
+AccessControl = ( Q, S, allower ) => {
+
+	const
+	origin = Q.headers.origin
+
+	if ( origin ) {
+		if ( allower( origin ) ) {
+			S.setHeader( 'Access-Control-Allow-Origin', origin )
+		    S.setHeader( 'Vary', 'Origin' ) // キャッシュ対策
+			S.setHeader( 'Access-Control-Allow-Credentials', 'true' ) // 認証ありのリクエスト用
+		} else {
+			_403( S )
+			return true
+		}
+	} else {
+		//	origin がない：Web と API が同じアドレスからサービスされてる：多分DEBUG環境
+		//	vercel みたいに同じアドレスからサービスする場合は無条件に '*'
+		if ( process.env.DEBUG ) {	//	process.env.DEBUG があって、nullable ではない時
+			S.setHeader( 'Access-Control-Allow-Origin', '*' )
+		} else {
+			_403( S )
+			return true
+		}
+	}
+
+	S.setHeader( 'Access-Control-Allow-Methods'	, 'GET, POST, OPTIONS' )
+	S.setHeader( 'Access-Control-Allow-Headers'	, 'Content-Type' )
+
+	if ( Q.method === 'OPTIONS' ) {
+		S.writeHead(204)
+		S.end()
+		return true
+	}
+	return false
+}
 
 const
 API = async ( Q, S, APIs ) => {
@@ -140,7 +164,7 @@ Static = async ( Q, S, dir ) => {
 		}
 	} catch ( e ) {
 		if ( e.code !== 'ENOENT' && e.code !== 'EACCESS' ) {
-			setTimeout( () => console.error( e ) )
+			console.error( e )
 			e instanceof URIError
 			?	_400( S )
 			:	_500( S )
@@ -170,8 +194,8 @@ API_SERVER = APIs => http.createServer(
 	)
 )
 export const
-CORS_API_SERVER = APIs => http.createServer(
-	async ( Q, S ) => AccessControl( Q, S )
+CORS_API_SERVER = ( APIs, allower ) => http.createServer(
+	async ( Q, S ) => AccessControl( Q, S, allower )
 	?	LOG( 'CORS', Q )
 	:	await API( Q, S, APIs )
 		?	LOG( 'API', Q )
@@ -195,12 +219,12 @@ STATIC_SERVER = dirREL => {
 	)
 }
 export const
-CORS_STATIC_SERVER = dirREL => {
+CORS_STATIC_SERVER = ( dirREL, allower ) => {
 	const
 	dir = ExistingAbsolutePath( dirREL )
 
 	return http.createServer(
-		async ( Q, S ) => AccessControl( Q, S )
+		async ( Q, S ) => AccessControl( Q, S, allower )
 		?	LOG( 'CORS', Q )
 		:	await Static( Q, S, dir )
 			?	LOG( 'FILE', Q )
@@ -230,12 +254,13 @@ API_STATIC_SERVER = ( APIs, dirREL ) => {
 	)
 }
 export const
-CORS_API_STATIC_SERVER = ( APIs, dirREL ) => {
+CORS_API_STATIC_SERVER = ( APIs, dirREL, allower ) => {
+
 	const
 	dir = ExistingAbsolutePath( dirREL )
 
 	return http.createServer(
-		async ( Q, S ) => AccessControl( Q, S )
+		async ( Q, S ) => AccessControl( Q, S, allower )
 		?	LOG( 'CORS', Q )
 		:	await API( Q, S, APIs )
 			?	LOG( 'API', Q )
