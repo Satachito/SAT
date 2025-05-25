@@ -61,7 +61,10 @@ export const
 BodyAsJSON = async Q => JSON.parse( await Body( Q ) )
 
 const	//	THROWS, CATCH IT
-PathName = Q => decodeURIComponent( new URL( Q.url, `http://${Q.headers.host}` ).pathname )
+PathName = Q => decodeURIComponent( new URL( Q.url, 'http://localhost' ).pathname )
+
+//下のだとURL Injection 攻撃に対して脆弱
+//PathName = Q => decodeURIComponent( new URL( Q.url, `http://${Q.headers.host}` ).pathname )
 
 const
 AccessControl = ( Q, S ) => (
@@ -84,7 +87,7 @@ API = async ( Q, S, APIs ) => {
 		if ( !API ) return false
 		await API( Q, S )
 	} catch ( e ) {
-		setTimeout( () => console.error( e ) )
+		console.error( e )
 		e instanceof URIError
 		?	_400( S )
 		:	_500( S )
@@ -263,7 +266,12 @@ export const
 SerializeSessionCookie = sessionID => serialize(
 	'session'
 ,	`${ sessionID }.${ Sign( sessionID ) }`
-,	{ httpOnly: true, path: '/', sameSite: 'lax', secure: false, maxAge: 60 * 60 * 24 * 7 }
+,	{	httpOnly	: true
+	,	path		: '/'
+	,	sameSite	: 'lax'
+	,	secure		: !process.env.DEBUG
+	,	maxAge		: 60 * 60 * 24 * 7
+	}
 )
 
 export const
