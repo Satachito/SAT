@@ -16,7 +16,7 @@ ExpandTab = ( _, nSpaces = 4 ) => _.split( '\n' ).map(
 ////////////////////////////////////////////////////////////////
 //	URLが存在しない場合 fetch 自体が TypeError( 'TypeError', 'Failed to fetch' ) を throw してくる
 //	response.ok が false の場合、response 自体を throw する
-//	Browser.js が catch した時のために AlertForFetch を用意してある。
+//	Browser.js に Browser が catch した時のために AlertForFetch を用意してある。
 
 export const
 FetchJSON = ( _, options = {} ) => fetch( _, options ).then(
