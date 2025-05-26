@@ -68,7 +68,7 @@ export const
 LoadText = options => Load( options ).then( files => Promise.all( files.map( file => file.text() ) ) )
 
 export const
-LoadJSON = options => LoadText( options ).then( texts => Promise.all( texts.map( text => JSON.parse( text ) ) ) )
+LoadJSONable = options => LoadText( options ).then( texts => Promise.all( texts.map( text => JSON.parse( text ) ) ) )
 
 export const
 Save = ( _, options ) => window.showSaveFilePicker( options ).then(
@@ -85,7 +85,7 @@ export const
 SaveText = Save
 
 export const
-SaveJSON = ( _, options ) => Save( JSON.stringify( _ ), options )
+SaveJSONable = ( _, options ) => Save( JSON.stringify( _ ), options )
 
 
 
