@@ -130,15 +130,30 @@ Overlaybutton<br>
 <hr>
 
 Spin button<br>
-<button is=spin-button			id=SPIN_BUTTON		>SPIN BUTTON			</button>
+<button is=spin-button			id=SPIN_BUTTON		>SPIN BUTTON(REJECT)	</button>
+<hr>
 
-<button is=sat-overlay-button id=OVERLAY_ELASTIC>Overlay Elastic</button>
+Overlay Elastic button<br>
+<button is=sat-overlay-button	id=OVERLAY_ELASTIC	>Elastic BUTTON(REJECT)	</button>
 
 <hr>
 
 <script type=module>
 
-import { Alert, FetchJSON, AlertForFetch, Spinner, Button, OverlayButton } from './SAT.js'
+import {
+	FetchJSON
+} from './SAT.js'
+
+import {
+	Alert
+,	AlertForFetch
+} from './Browser.js'
+
+import {
+	Spinner
+,	Button
+,	OverlayButton
+} from './Components.js'
 
 //	これだとfetchしてる間にボタンが押されてしまう。
 PLANE_BUTTON.onclick = ev => (
@@ -158,7 +173,7 @@ const
 Timeout1000 = () => new Promise( ( S, J ) => setTimeout( () => J( 'REJECT' ), 1000 ) ).catch( Alert )
 
 const
-PackmanSpinner = () => {
+PackmanSpinner = async () => {
 	const
 	$ = new Spinner()
 	$.classList.add( 'vFit', 'packmanLoader' )
@@ -180,7 +195,7 @@ SpinButton extends OverlayButton {
 	constructor() {
 		super()
 
-		this.CreateOverlay = () => {
+		this.CreateOverlay = async () => {
 			const
 			$ = new Spinner()
 			$.style.height			= '100%'
@@ -198,7 +213,7 @@ customElements.define( 'spin-button', SpinButton, { extends: 'button' } )
 SPIN_BUTTON.CreatePromise = Timeout1000
 
 OVERLAY_ELASTIC.CreatePromise = Timeout1000
-OVERLAY_ELASTIC.CreateOverlay = () => {
+OVERLAY_ELASTIC.CreateOverlay = async () => {
 	const
 	$ = document.createElement( 'div' )
 	$.classList.add( 'dot-elastic' )

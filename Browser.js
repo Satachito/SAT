@@ -4,6 +4,12 @@ Alert = e => (
 ,	alert( e )
 )
 
+export const
+AlertForFetch = _ => (
+	( _ instanceof Error	) && Alert( _ )
+,	( _ instanceof Response	) && Alert( `${ _.status }: ${ _.statusText }` )
+)
+
 export const E		= _ => document.createElement( _ )
 
 export const Rs		= ( $, ..._ ) => $.replaceChildren( ..._ )
@@ -68,12 +74,6 @@ SaveText = Save
 
 export const
 SaveJSON = ( _, options ) => Save( JSON.stringify( _ ), options )
-
-export const
-AlertForFetch = _ => (
-	( _ instanceof Error	) && Alert( _ )
-,	( _ instanceof Response	) && Alert( `${ _.status }: ${ _.statusText }` )
-)
 
 
 

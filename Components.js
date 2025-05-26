@@ -47,9 +47,8 @@ OverlayButton extends HTMLButtonElement {
 		this.style.justifyContent	= 'center'
 		this.style.position			= 'relative'
 
-		this.onclick = () => On(
-			this.CreateOverlay()
-		,	overlay => (
+		this.onclick = () => this.CreateOverlay().then(
+			overlay => (
 				this.disabled = true
 			,	overlay.style.position	= 'absolute'
 			,	this.appendChild( overlay )
@@ -65,21 +64,3 @@ OverlayButton extends HTMLButtonElement {
 }
 customElements.define( 'sat-overlay-button', OverlayButton, { extends: 'button' } )
 
-//	OverlayButton EXAMPLE
-//	class
-//	SpinButton extends OverlayButton {
-//		constructor() {
-//			super()
-//	
-//			this.CreateOverlay = () => {
-//				const
-//				$ = new Spinner()
-//				$.style.boxSizing		= 'border-box'
-//				$.style.border			= '5px solid black'
-//				$.style.borderTop		= '5px solid transparent'
-//				$.style.borderRadius	= '50%'
-//				return $
-//			}
-//		}
-//	}
-//	customElements.define( 'spin-button', SpinButton, { extends: 'button' } )

@@ -58,7 +58,7 @@ FetchDOM = ( _, options = {} ) => FetchText( _, options ).then(
 )
 
 export const
-PostJSON = async ( _, $ ) => await FetchJSON(
+PostJSON = async ( _, $ ) => FetchJSON(
 	_
 ,	{	method	: 'POST'
 	,	headers	: { 'Content-Type': 'application/json' }
