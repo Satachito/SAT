@@ -1,7 +1,7 @@
 export const
-Alert = e => (
-	console.error( e )
-,	alert( e )
+Alert = _ => (
+	console.error( _ )
+,	alert( _ )
 )
 
 export const
@@ -16,47 +16,59 @@ export const Rs		= ( $, ..._ ) => $.replaceChildren( ..._ )
 export const As		= ( $, ..._ ) => $.append( ..._ )
 export const AC		= ( $, _ ) => $.appendChild( _ )
 export const ACE	= ( $, _ ) => AC( $, E( _ ) )
-export const On		= ( $, _ ) => $ && _( $ )
 
-////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////	TODO: TEST
 
-export const
-ReadAsText = _ => ( //	_ : <input type=file>
-	_.disabled = true
-,	Promise.all(
-		Array.from( _.files ).map(
-			_ => new Promise(
-				( R, J ) => {
-					const
-					$ = new FileReader()
-					$.onload = () => R( $.result )
-					$.onerror = () => J( $.error )
-					$.readAsText( _ )
-				}
-			)
+const
+ReadsAs = ( files, method ) => Promise.all(
+	files.map(
+		file => new Promise(
+			( R, J ) => {
+				const
+				$ = new FileReader()
+				$.onload = () => R( $.result )
+				$.onerror = () => J( $.error )
+				$[ method ]( file )
+			}
 		)
-	).catch( Alert ).finally(
-		() => _.disabled = false
 	)
 )
+	
+const
+ReadFilesAs = ( ev, method ) => ReadsAs( [ ...ev.target.files ]			, method )
+export const ReadFilesAsText		= ev => ReadFilesAs( ev, 'readAsText'			)
+export const ReadFilesAsArrayBuffer	= ev => ReadFilesAs( ev, 'readAsArrayBuffer'	)
+export const ReadFilesAsDataURL		= ev => ReadFilesAs( ev, 'readAsDataURL'		)
 
-//	EXAMPLE
-//	INPUT_FILE.onchange = ev => ReadAsText( ev.currentTarget ).then( console.log )
+const
+ReadDropsAs = ( ev, method ) => ReadsAs( [ ...ev.dataTransfer.files ]	, method )
+export const ReadDropsAsText		= ev => ReadDropsAs( ev, 'readAsText'			)
+export const ReadDropsAsArrayBuffer	= ev => ReadDropsAs( ev, 'readAsArrayBuffer'	)
+export const ReadDropsAsDataURL		= ev => ReadDropsAs( ev, 'readAsDataURL'		)
+
+const
+ReadInputAs = async ( _, method ) => (		//	<input type=file>
+	_.disabled = true
+,	ReadsAs( [ ..._.files ], method ).finally( () => _.disabled = false )
+)
+export const ReadInputAsText		= _ => ReadInputAs( _, 'readAsText'		)
+export const ReadInputAsArrayBuffer	= _ => ReadInputAs( _, 'readAsArrayBuffer'	)
+export const ReadInputAsDataURL		= _ => ReadInputAs( _, 'readAsDataURL'		)
 
 ////////////////////////////////////////////////////////////////
 
 export const
 Load = options => window.showOpenFilePicker( options ).then(
-	_ => Promise.all( _.map( _ => _.getFile() ) )
+	pathes => Promise.all( pathes.map( path => path.getFile() ) )
 ).catch(
-	e => e.name === 'AbortError' ? console.log( e ) : Alert( e )
+	E => { if ( E.name !== 'AbortError' ) throw E }
 )
 
 export const
-LoadText = _ => Load( _ ).then( _ => Promise.all( _.map( _ => _.text() ) ) )
+LoadText = options => Load( options ).then( files => Promise.all( files.map( file => file.text() ) ) )
 
 export const
-LoadJSON = _ => LoadText( _ ).then( _ => Promise.all( _.map( _ => JSON.parse( _ ) ) ) )
+LoadJSON = options => LoadText( options ).then( texts => Promise.all( texts.map( text => JSON.parse( text ) ) ) )
 
 export const
 Save = ( _, options ) => window.showSaveFilePicker( options ).then(
@@ -66,7 +78,7 @@ Save = ( _, options ) => window.showSaveFilePicker( options ).then(
 		)
 	)
 ).catch(
-	e => e.name === 'AbortError' ? console.log( e ) : Alert( e )
+	E => { if ( E.name !== 'AbortError' ) throw E }
 )
 
 export const
