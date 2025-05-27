@@ -97,6 +97,8 @@ button {
 
 </style>
 
+<h2>Components.js</h2>
+
 Spinner<br>
 <sat-spinner>ABC</sat-spinner>
 <sat-spinner class="rem1 black"></sat-spinner>
@@ -138,6 +140,16 @@ Overlay Elastic button<br>
 
 <hr>
 
+
+<h2>Browser.js</h2>
+<input type=file id=READ_INPUT_AS_TEXT value=ReadInputAsText>
+<button id=SHOW_FILES_B>Show file contents
+
+
+
+
+
+
 <script type=module>
 
 import {
@@ -147,6 +159,8 @@ import {
 import {
 	Alert
 ,	AlertForFetch
+,	ReadFilesAsText
+,	ReadInputAsText
 } from './Browser.js'
 
 import {
@@ -154,6 +168,13 @@ import {
 ,	Button
 ,	OverlayButton
 } from './Components.js'
+
+READ_INPUT_AS_TEXT.onchange = ev => ReadFilesAsText( ev ).then( console.log )
+SHOW_FILES_B.onclick = ev => ReadInputAsText( READ_INPUT_AS_TEXT ).then( console.log )
+
+
+
+
 
 //	これだとfetchしてる間にボタンが押されてしまう。
 PLANE_BUTTON.onclick = ev => (

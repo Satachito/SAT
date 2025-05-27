@@ -35,24 +35,25 @@ ReadsAs = ( files, method ) => Promise.all(
 )
 	
 const
-ReadFilesAs = ( ev, method ) => ReadsAs( [ ...ev.target.files ]			, method )
-export const ReadFilesAsText		= ev => ReadFilesAs( ev, 'readAsText'			)
-export const ReadFilesAsArrayBuffer	= ev => ReadFilesAs( ev, 'readAsArrayBuffer'	)
-export const ReadFilesAsDataURL		= ev => ReadFilesAs( ev, 'readAsDataURL'		)
-
+ReadFilesAs = ( e, method ) => ReadsAs( [ ...e.target.files ]		, method )
 const
-ReadDropsAs = ( ev, method ) => ReadsAs( [ ...ev.dataTransfer.files ]	, method )
-export const ReadDropsAsText		= ev => ReadDropsAs( ev, 'readAsText'			)
-export const ReadDropsAsArrayBuffer	= ev => ReadDropsAs( ev, 'readAsArrayBuffer'	)
-export const ReadDropsAsDataURL		= ev => ReadDropsAs( ev, 'readAsDataURL'		)
-
+ReadDropsAs = ( e, method ) => ReadsAs( [ ...e.dataTransfer.files ]	, method )
 const
-ReadInputAs = async ( _, method ) => (		//	<input type=file>
+ReadInputAs = async ( _, method ) => (		//	_: <input type=file>
 	_.disabled = true
-,	ReadsAs( [ ..._.files ], method ).finally( () => _.disabled = false )
+,	ReadsAs( Array.from( _.files ), method ).finally( () => _.disabled = false )
 )
-export const ReadInputAsText		= _ => ReadInputAs( _, 'readAsText'		)
+
+export const ReadFilesAsText		= e => ReadFilesAs( e, 'readAsText'			)
+export const ReadDropsAsText		= e => ReadDropsAs( e, 'readAsText'			)
+export const ReadInputAsText		= _ => ReadInputAs( _, 'readAsText'			)
+
+export const ReadFilesAsArrayBuffer	= e => ReadFilesAs( e, 'readAsArrayBuffer'	)
+export const ReadDropsAsArrayBuffer	= e => ReadDropsAs( e, 'readAsArrayBuffer'	)
 export const ReadInputAsArrayBuffer	= _ => ReadInputAs( _, 'readAsArrayBuffer'	)
+
+export const ReadFilesAsDataURL		= e => ReadFilesAs( e, 'readAsDataURL'		)
+export const ReadDropsAsDataURL		= e => ReadDropsAs( e, 'readAsDataURL'		)
 export const ReadInputAsDataURL		= _ => ReadInputAs( _, 'readAsDataURL'		)
 
 ////////////////////////////////////////////////////////////////

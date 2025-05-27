@@ -63,9 +63,6 @@ BodyAsJSON = async Q => JSON.parse( await Body( Q ) )
 const	//	THROWS, CATCH IT
 PathName = Q => decodeURIComponent( new URL( Q.url, 'http://localhost' ).pathname )
 
-//下のだとURL Injection 攻撃に対して脆弱
-//PathName = Q => decodeURIComponent( new URL( Q.url, `http://${Q.headers.host}` ).pathname )
-
 const
 AccessControl = ( Q, S, allower ) => {
 

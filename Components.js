@@ -26,9 +26,9 @@ Button extends HTMLButtonElement {
 	constructor() {
 		super()
 
-		this.onclick = ev => (
+		this.onclick = e => (
 			this.disabled = true
-		,	this.CreatePromise( ev ).finally(
+		,	this.CreatePromise( e ).finally(
 				() => this.disabled = false
 			)
 		)
