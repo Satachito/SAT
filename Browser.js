@@ -17,6 +17,63 @@ export const As		= ( $, ..._ ) => $.append( ..._ )
 export const AC		= ( $, _ ) => $.appendChild( _ )
 export const ACE	= ( $, _ ) => AC( $, E( _ ) )
 
+export const
+AppendAnd = ( parent, tag, init ) => {
+	const
+	$ = AC( parent, E( tag ) )
+	init( $ )
+	return $
+}
+
+export const
+AppendButton = ( parent, innerHTML, onclick ) => AppendAnd(
+	parent
+,	'button'
+,	_ => {
+		_.innerHTML = innerHTML
+		_.onclick = onclick
+	}
+)
+
+export const
+AppendSpan = ( parent, innerHTML ) => AppendAnd(
+	parent
+,	'span'
+,	_ => _.innerHTML = innerHTML
+)
+
+export const
+CreateClass = (
+	name
+,	init
+,	{	connected
+	,	disconnected
+	,	adopted
+	,	onAttrChange
+	,	attributes = []
+	} = {}
+) => {
+	const
+	$ = class extends HTMLElement {
+		constructor() {
+			super()
+			init( this )
+		}
+		connectedCallback		() { connected		?.( this ) }
+		disconnectedCallback	() { disconnected	?.( this ) }
+		adoptedCallback			() { adopted		?.( this ) }
+	    attributeChangedCallback( name, oldValue, newValue ) {
+			onAttrChange?.( this, name, oldValue, newValue )
+		}
+		static get
+		observedAttributes() {
+			return attributes
+		}
+    }
+	customElements.define( name, $ )
+	return $
+}
+
 ////////////////////////////////////////////////////////////////	TODO: TEST
 
 const

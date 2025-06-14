@@ -143,8 +143,10 @@ Overlay Elastic button<br>
 
 <h2>Browser.js</h2>
 <input type=file id=READ_INPUT_AS_TEXT value=ReadInputAsText>
-<button id=SHOW_FILES_B>Show file contents
-
+<button id=SHOW_FILES_B>Show file contents</button>
+<hr>
+<my-counter id=MY_COUNTER></my-counter>
+<iframe id=FRAME></iframe>
 
 
 
@@ -159,6 +161,11 @@ import {
 import {
 	Alert
 ,	AlertForFetch
+
+,	AppendButton
+,	AppendSpan
+,	CreateClass
+
 ,	ReadFilesAsText
 ,	ReadInputAsText
 } from './Browser.js'
@@ -241,8 +248,31 @@ OVERLAY_ELASTIC.CreateOverlay = async () => {
 	return $
 }
 
+CreateClass(
+	'my-counter'
+,	_ => {
+		AppendButton( _, '-', () => _.text.innerText = --_.count )
+		_.text = AppendSpan( _, '-' )
+		AppendButton( _, '+', () => _.text.innerText = ++_.count )
+		_.text.innerText = _.count = 0
+	}
+,	{	connected		: _				=> console.log( 'connected:'	, _ )
+	,	disconnected	: _				=> console.log( 'disconnected:'	, _ )
+	,	adopted			: _				=> console.log( 'adopted:'		, _ )
+	,	onAttrChange	: ( _, ...$ )	=> console.log( 'onAttrChange: ', _, $ )
+	,	attributes		: [ 'dummy' ]
+	}
+)
+
+MY_COUNTER.setAttribute( 'dummy', 'John Doe' )
+
+FRAME.onload = () => FRAME.contentDocument.body.appendChild( MY_COUNTER )
+FRAME.src = 'about:blank';
+
 
 </script>
 
+
 </html>
+
 
