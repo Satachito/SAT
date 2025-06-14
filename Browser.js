@@ -44,7 +44,7 @@ AppendSpan = ( parent, innerHTML ) => AppendAnd(
 
 export const
 CreateClass = (
-	name
+	tag
 ,	init
 ,	{	connected
 	,	disconnected
@@ -70,7 +70,7 @@ CreateClass = (
 			return attributes
 		}
     }
-	customElements.define( name, $ )
+	customElements.define( tag, $ )
 	return $
 }
 

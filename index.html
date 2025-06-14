@@ -148,6 +148,8 @@ Overlay Elastic button<br>
 <my-counter id=MY_COUNTER></my-counter>
 <iframe id=FRAME></iframe>
 
+<hr>
+
 
 
 
@@ -248,7 +250,8 @@ OVERLAY_ELASTIC.CreateOverlay = async () => {
 	return $
 }
 
-CreateClass(
+const
+MyCounter = CreateClass(
 	'my-counter'
 ,	_ => {
 		AppendButton( _, '-', () => _.text.innerText = --_.count )
@@ -269,6 +272,7 @@ MY_COUNTER.setAttribute( 'dummy', 'John Doe' )
 FRAME.onload = () => FRAME.contentDocument.body.appendChild( MY_COUNTER )
 FRAME.src = 'about:blank';
 
+document.body.appendChild( new MyCounter() )
 
 </script>
 
