@@ -45,15 +45,47 @@ export	const
 _404 = ( S, _ = 'Not found.'				) => Send( S, 404, _ )
 
 export	const
+_405 = ( S, _ = 'Method not allowed.'		) => Send( S, 405, _ )
+
+export	const
 _500 = ( S, _ = 'Internal server error.'	) => Send( S, 500, _ )
 
 export const
-Body = Q => new Promise(
+Body = ( Q, limit = 1024 * 1024 ) => new Promise(
 	( R, J ) => {
 		let $ = ''
-		Q.on( 'data', _ => $ += _ )
-		Q.on( 'end', () => R( $ ) )
-		Q.on( 'error', E => J( E ) )
+		let n = 0
+		let done = false
+		Q.on(
+			'data'
+		,	_ => {
+				if ( done ) return
+				n += _.length
+				if ( n > limit ) {
+					done = true
+					J( new Error( 'Request body too large.' ) )
+					Q.destroy()
+					return
+				}
+				$ += _
+			}
+		)
+		Q.on(	
+			'end'
+		,	() => {
+				if ( done ) return
+				done = true
+				R( $ )
+			}
+		)
+		Q.on(
+			'error'
+		,	E => {
+				if ( done ) return
+				done = true
+				J( E )
+			}
+		)
 	}
 )
 
@@ -135,8 +167,9 @@ const
 Static = async ( Q, S, dir ) => {
 	try {
 		const
-		name = path.normalize( path.join( dir, PathName( Q ) ) )
-		if ( !name.startsWith( dir ) ) {
+		name = path.resolve( dir, `.${ PathName( Q ) }` )
+	,	rel = path.relative( dir, name )
+		if ( rel.startsWith( '..' ) || path.isAbsolute( rel ) ) {
 			_403( S )
 			return true
 		}
@@ -160,7 +193,7 @@ Static = async ( Q, S, dir ) => {
 			}
 		}
 	} catch ( e ) {
-		if ( e.code !== 'ENOENT' && e.code !== 'EACCESS' ) {
+		if ( e.code !== 'ENOENT' && e.code !== 'EACCES' ) {
 			console.error( e )
 			e instanceof URIError
 			?	_400( S )
@@ -186,9 +219,7 @@ export const
 API_SERVER = APIs => http.createServer(
 	async ( Q, S ) => await API( Q, S, APIs )
 	?	LOG( 'API', Q )
-	: (	_404( S )
-	,	LOG( '404', Q )
-	)
+	:	( _404( S ), LOG( '404', Q ) )
 )
 export const
 CORS_API_SERVER = ( APIs, allower ) => http.createServer(
@@ -196,80 +227,44 @@ CORS_API_SERVER = ( APIs, allower ) => http.createServer(
 	?	LOG( 'CORS', Q )
 	:	await API( Q, S, APIs )
 		?	LOG( 'API', Q )
-		: (	_404( S )
-		,	LOG( '404', Q )
-		)
-	//
+		:	( _404( S ), LOG( '404', Q ) )
 )
 
 export const
-STATIC_SERVER = dirREL => {
-	const
-	dir = ExistingAbsolutePath( dirREL )
+STATIC_SERVER = dif => http.createServer(
+	async ( Q, S ) => await Static( Q, S, ExistingAbsolutePath( dif ) )
+	?	LOG( 'FILE', Q )
+	:	( _404( S ), LOG( '404', Q ) )
+)
 
-	return http.createServer(
-		async ( Q, S ) => await Static( Q, S, dir )
+export const
+CORS_STATIC_SERVER = ( dif, allower ) => http.createServer(
+	async ( Q, S ) => AccessControl( Q, S, allower )
+	?	LOG( 'CORS', Q )
+	:	await Static( Q, S, ExistingAbsolutePath( dir ) )
 		?	LOG( 'FILE', Q )
-		: (	_404( S )
-		,	LOG( '404', Q )
-		)
-	)
-}
-export const
-CORS_STATIC_SERVER = ( dirREL, allower ) => {
-	const
-	dir = ExistingAbsolutePath( dirREL )
+		:	( _404( S ), LOG( '404', Q ) )
+)
 
-	return http.createServer(
-		async ( Q, S ) => AccessControl( Q, S, allower )
-		?	LOG( 'CORS', Q )
-		:	await Static( Q, S, dir )
+export const
+API_STATIC_SERVER = ( APIs, dir ) => http.createServer(
+	async ( Q, S ) => await API( Q, S, APIs )
+	?	LOG( 'API', Q )
+	:	await Static( Q, S, ExistingAbsolutePath( dirREL ) )
+		?	LOG( 'FILE', Q )
+		:	( _404( S ), LOG( '404', Q ) )
+)
+
+export const
+CORS_API_STATIC_SERVER = ( APIs, dir, allower ) => http.createServer(
+	async ( Q, S ) => AccessControl( Q, S, allower )
+	?	LOG( 'CORS', Q )
+	:	await API( Q, S, APIs )
+		?	LOG( 'API', Q )
+		:	await Static( Q, S, ExistingAbsolutePath( dir ) )
 			?	LOG( 'FILE', Q )
-			: (	_404( S )
-			,	LOG( '404', Q )
-			)
-		//
-	)
-}
-
-export const
-API_STATIC_SERVER = ( APIs, dirREL ) => {
-	const
-	dir = ExistingAbsolutePath( dirREL )
-
-	return http.createServer(
-		async ( Q, S ) => {
-			await API( Q, S, APIs )
-			?	LOG( 'API', Q )
-			:	await Static( Q, S, dir )
-				?	LOG( 'FILE', Q )
-				: (	_404( S )
-				,	LOG( '404', Q )
-				)
-			//
-		}
-	)
-}
-export const
-CORS_API_STATIC_SERVER = ( APIs, dirREL, allower ) => {
-
-	const
-	dir = ExistingAbsolutePath( dirREL )
-
-	return http.createServer(
-		async ( Q, S ) => AccessControl( Q, S, allower )
-		?	LOG( 'CORS', Q )
-		:	await API( Q, S, APIs )
-			?	LOG( 'API', Q )
-			:	await Static( Q, S, dir )
-				?	LOG( 'FILE', Q )
-				: (	_404( S )
-				,	LOG( '404', Q )
-				)
-			//
-		//
-	)
-}
+			:	( _404( S ), LOG( '404', Q ) )
+)
 
 import crypto from 'crypto'
 
