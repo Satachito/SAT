@@ -32,60 +32,31 @@ Send = ( S, status = 200, _ = '', type = 'text/plain' ) => (
 export const
 SendJSONable = ( S, _ ) => Send( S, 200, JSON.stringify( _ ), 'application/json' )
 
-export	const
+export const
 _400 = ( S, _ = 'Bad request.'				) => Send( S, 400, _ )
 
-export	const
+export const
 _401 = ( S, _ = 'Unauthorized.'				) => Send( S, 401, _ )
 
-export	const
+export const
 _403 = ( S, _ = 'Forbidden.'				) => Send( S, 403, _ )
 
-export	const
+export const
 _404 = ( S, _ = 'Not found.'				) => Send( S, 404, _ )
 
-export	const
+export const
 _405 = ( S, _ = 'Method not allowed.'		) => Send( S, 405, _ )
 
-export	const
+export const
 _500 = ( S, _ = 'Internal server error.'	) => Send( S, 500, _ )
 
 export const
-Body = ( Q, limit = 1024 * 1024 ) => new Promise(
+Body = Q => new Promise(
 	( R, J ) => {
 		let $ = ''
-		let n = 0
-		let done = false
-		Q.on(
-			'data'
-		,	_ => {
-				if ( done ) return
-				n += _.length
-				if ( n > limit ) {
-					done = true
-					J( new Error( 'Request body too large.' ) )
-					Q.destroy()
-					return
-				}
-				$ += _
-			}
-		)
-		Q.on(	
-			'end'
-		,	() => {
-				if ( done ) return
-				done = true
-				R( $ )
-			}
-		)
-		Q.on(
-			'error'
-		,	E => {
-				if ( done ) return
-				done = true
-				J( E )
-			}
-		)
+		Q.on( 'data'	, _ => $ += _ )
+		Q.on( 'end'		, () => R( $ ) )
+		Q.on( 'error'	, J )
 	}
 )
 
@@ -204,7 +175,7 @@ Static = async ( Q, S, dir ) => {
 	return false
 }
 
-const
+export const
 ExistingAbsolutePath = _ => {
 	const
 	dir = path.resolve( process.cwd(), _ )
@@ -213,58 +184,31 @@ ExistingAbsolutePath = _ => {
 }
 
 const
-LOG = ( tag, Q ) => console.log( `[${new Date().toISOString()}] ${tag}\t${Q.url}` )
+serveAPI				= async ( Q, S, APIs )		=> await API( Q, S, APIs ) || _404( S )
+const
+serveStatic				= async ( Q, S, _ )			=> await Static( Q, S, _ ) || _404( S )
+const
+serveAPIStatic			= async ( Q, S, APIs, _ )	=> await API( Q, S, APIs ) || await serveStatic( Q, S, _ )
+
 
 export const
-API_SERVER = APIs => http.createServer(
-	async ( Q, S ) => await API( Q, S, APIs )
-	?	LOG( 'API', Q )
-	:	( _404( S ), LOG( '404', Q ) )
-)
-export const
-CORS_API_SERVER = ( APIs, allower ) => http.createServer(
-	async ( Q, S ) => AccessControl( Q, S, allower )
-	?	LOG( 'CORS', Q )
-	:	await API( Q, S, APIs )
-		?	LOG( 'API', Q )
-		:	( _404( S ), LOG( '404', Q ) )
-)
+API_SERVER				= APIs					=> http.createServer( async ( Q, S ) => await serveAPI( Q, S, APIs ) )
 
 export const
-STATIC_SERVER = dif => http.createServer(
-	async ( Q, S ) => await Static( Q, S, ExistingAbsolutePath( dif ) )
-	?	LOG( 'FILE', Q )
-	:	( _404( S ), LOG( '404', Q ) )
-)
+STATIC_SERVER			= _						=> http.createServer( async ( Q, S ) => await serveStatic( Q, S, _ ) )
 
 export const
-CORS_STATIC_SERVER = ( dif, allower ) => http.createServer(
-	async ( Q, S ) => AccessControl( Q, S, allower )
-	?	LOG( 'CORS', Q )
-	:	await Static( Q, S, ExistingAbsolutePath( dir ) )
-		?	LOG( 'FILE', Q )
-		:	( _404( S ), LOG( '404', Q ) )
-)
+API_STATIC_SERVER		= ( APIs, _ )			=> http.createServer( async ( Q, S ) => await serveAPIStatic( Q, S, APIs, _ ) )
 
 export const
-API_STATIC_SERVER = ( APIs, dir ) => http.createServer(
-	async ( Q, S ) => await API( Q, S, APIs )
-	?	LOG( 'API', Q )
-	:	await Static( Q, S, ExistingAbsolutePath( dirREL ) )
-		?	LOG( 'FILE', Q )
-		:	( _404( S ), LOG( '404', Q ) )
-)
+CORS_API_SERVER			= ( allower, APIs )		=> http.createServer( async ( Q, S ) => AccessControl( Q, S, allower ) || await serveAPI( Q, S, APIs ) )
 
 export const
-CORS_API_STATIC_SERVER = ( APIs, dir, allower ) => http.createServer(
-	async ( Q, S ) => AccessControl( Q, S, allower )
-	?	LOG( 'CORS', Q )
-	:	await API( Q, S, APIs )
-		?	LOG( 'API', Q )
-		:	await Static( Q, S, ExistingAbsolutePath( dir ) )
-			?	LOG( 'FILE', Q )
-			:	( _404( S ), LOG( '404', Q ) )
-)
+CORS_STATIC_SERVER		= ( allower, _ )		=> http.createServer( async ( Q, S ) => AccessControl( Q, S, allower ) || await serveStatic( Q, S, _ ) )
+
+export const
+CORS_API_STATIC_SERVER	= ( allower, APIs, _ )	=> http.createServer( async ( Q, S ) => AccessControl( Q, S, allower ) || await serveAPIStatic( Q, S, APIs, _ ) )
+
 
 import crypto from 'crypto'
 
