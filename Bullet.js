@@ -66,6 +66,9 @@ BodyAsJSON = async Q => JSON.parse( await Body( Q ) )
 const	//	THROWS, CATCH IT
 PathName = Q => decodeURIComponent( new URL( Q.url, 'http://localhost' ).pathname )
 
+export const
+QueryOf = Q => new URL( Q.url, 'http://localhost' ).searchParams
+
 const
 AccessControl = ( Q, S, allower ) => {
 
@@ -92,7 +95,7 @@ AccessControl = ( Q, S, allower ) => {
 		}
 	}
 
-	S.setHeader( 'Access-Control-Allow-Methods'	, 'GET, POST, OPTIONS' )
+	S.setHeader( 'Access-Control-Allow-Methods'	, 'GET, POST, PUT, DELETE, OPTIONS' )
 	S.setHeader( 'Access-Control-Allow-Headers'	, 'Content-Type' )
 
 	if ( Q.method === 'OPTIONS' ) {
@@ -107,9 +110,23 @@ const
 API = async ( Q, S, APIs ) => {
 	try {
 		const
-		API = APIs[ PathName( Q ) ]
-		if ( !API ) return false
-		await API( Q, S )
+		pathname = PathName( Q )
+
+		let
+		API = APIs[ pathname ]
+	,	rest
+
+		if ( !API ) {
+			//	Keys ending with '/' match by prefix, longest key wins. Handler gets the decoded remainder.
+			let matched = ''
+			for ( const key in APIs ) {
+				if ( key.endsWith( '/' ) && key.length > matched.length && pathname.startsWith( key ) ) matched = key
+			}
+			if ( !matched ) return false
+			API = APIs[ matched ]
+			rest = pathname.slice( matched.length )
+		}
+		await API( Q, S, rest )
 	} catch ( e ) {
 		console.error( e )
 		e instanceof URIError
