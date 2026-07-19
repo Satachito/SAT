@@ -1,4 +1,5 @@
 //	<ai-assistant> — BYOK Claude / OpenAI panel ( light DOM, no ShadowRoot ).
+//	Extends <float-panel>: the float / dock button, head and drag logic live there.
 //
 //	Host supplies:
 //	  el.systemWithModel = () => string
@@ -7,6 +8,7 @@
 //	Attributes: provider, store-key, store-model, title?, float-store?,
 //	key-placeholder?, max-turns?
 
+import FloatPanel from '../float-panel.js'
 import anthropic from './anthropic.js'
 import openai from './openai.js'
 import { DEFAULT_MODELS } from './defaults.js'
@@ -33,7 +35,7 @@ E	= ( tag, attrs = {}, ...kids ) => {
 }
 
 class
-AiAssistant extends HTMLElement {
+AiAssistant extends FloatPanel {
 
 	static get observedAttributes() { return ATTRS }
 
@@ -43,7 +45,6 @@ AiAssistant extends HTMLElement {
 		this.applyOps			= null
 		this._defaultModels		= null
 		this._built				= false
-		this._floatDrag			= null
 	}
 
 	get defaultModels() { return this._defaultModels }
@@ -59,7 +60,6 @@ AiAssistant extends HTMLElement {
 		return	this.getAttribute( 'title' )
 			||	( this.provider === 'openai' ? 'OpenAI assistant' : 'Claude assistant' )
 	}
-	get floatStore() { return this.getAttribute( 'float-store' ) }
 	get keyPlaceholder() {
 		return	this.getAttribute( 'key-placeholder' )
 			||	( this.provider === 'openai'
@@ -74,15 +74,16 @@ AiAssistant extends HTMLElement {
 	}
 
 	connectedCallback() {
-		this.classList.add( 'ai-panel' )
-		if	( this._built ) return
-		this._build()
-		this._bind()
+		if	( !this._built ) {
+			this._build()
+			this._bind()
+		}
+		super.connectedCallback()	//	FloatPanel: prepend head, wire float / dock
 	}
 
 	attributeChangedCallback( name ) {
+		super.attributeChangedCallback( name )	//	FloatPanel: title, float-store
 		if	( !this._built ) return
-		if	( name === 'title' && this._titleEl ) this._titleEl.textContent = this.panelTitle
 		if	( name === 'key-placeholder' && this._key ) this._key.placeholder = this.keyPlaceholder
 		if	( name === 'provider' ) {
 			this._fillModels( this._defaultModels || DEFAULT_MODELS[ this.provider ] || [] )
@@ -94,7 +95,6 @@ AiAssistant extends HTMLElement {
 			this._key.value = localStorage.getItem( this.storeKey ) || ''
 		}
 		if	( name === 'store-model' ) this._pickModel( localStorage.getItem( this.storeModel ) )
-		if	( name === 'float-store' ) this._setupFloat()
 	}
 
 	_provider() {
@@ -106,22 +106,6 @@ AiAssistant extends HTMLElement {
 
 	_build() {
 		this.replaceChildren()
-
-		const
-		floatBtn = this.floatStore
-			?	E( 'button', {
-					type		: 'button'
-				,	className	: 'ai-float-btn'
-				,	title		: 'Float panel'
-				,	'aria-label': 'Float / dock panel'
-				,	text		: '⤢'
-				} )
-			:	null
-
-		this._titleEl	= E( 'span', { className: 'ai-head-title', text: this.panelTitle } )
-		this._floatBtn	= floatBtn
-		const
-		head = E( 'div', { className: 'ai-head' }, this._titleEl, floatBtn )
 
 		this._key		= E( 'input', {
 			type			: 'password'
@@ -157,8 +141,7 @@ AiAssistant extends HTMLElement {
 		this._send	= E( 'button', { type: 'button', text: 'Send' } )
 
 		this.append(
-			head
-		,	E( 'div', { className: 'ai-config' }, keyRow, modelRow )
+			E( 'div', { className: 'ai-config' }, keyRow, modelRow )
 		,	this._log
 		,	this._input
 		,	this._send
@@ -221,47 +204,6 @@ AiAssistant extends HTMLElement {
 				void this._run()
 			}
 		}
-		this._setupFloat()
-	}
-
-	_setupFloat() {
-		if	( !this._floatBtn ) return
-		const
-		store = this.floatStore
-		,	setFloat = on => {
-			this.classList.toggle( 'floating', on )
-			if	( !on ) {
-				this.style.left = this.style.top = this.style.right = this.style.transform = ''
-			}
-			this._floatBtn.textContent	= on ? '⤓' : '⤢'
-			this._floatBtn.title		= on ? 'Dock panel' : 'Float panel'
-			store && localStorage.setItem( store, on ? '1' : '' )
-		}
-		this._floatBtn.onclick = () => setFloat( !this.classList.contains( 'floating' ) )
-
-		const
-		head = this.querySelector( '.ai-head' )
-		head.onpointerdown = ev => {
-			if	( !this.classList.contains( 'floating' ) || ev.target === this._floatBtn ) return
-			const	r = this.getBoundingClientRect()
-			this._floatDrag = { dx: ev.clientX - r.left, dy: ev.clientY - r.top }
-			this.style.transform	= 'none'
-			this.style.left			= `${ r.left }px`
-			this.style.top			= `${ r.top }px`
-			this.style.right		= 'auto'
-			head.setPointerCapture( ev.pointerId )
-		}
-		head.onpointermove = ev => {
-			if	( !this._floatDrag ) return
-			this.style.left	= `${ ev.clientX - this._floatDrag.dx }px`
-			this.style.top	= `${ ev.clientY - this._floatDrag.dy }px`
-		}
-		head.onpointerup = ev => {
-			this._floatDrag = null
-			head.releasePointerCapture?.( ev.pointerId )
-		}
-
-		setFloat( store && localStorage.getItem( store ) === '1' )
 	}
 
 	async _fetchModels() {
