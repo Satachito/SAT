@@ -4,6 +4,7 @@
 //	Host supplies:
 //	  el.systemWithModel = () => string
 //	  el.applyOps = async ops => issues
+//	  el.onSend = () => void
 //
 //	Attributes: provider, store-key, store-model, title?, float-store?,
 //	key-placeholder?, max-turns?
@@ -43,6 +44,7 @@ AiAssistant extends FloatPanel {
 		super()
 		this.systemWithModel	= null
 		this.applyOps			= null
+		this.onSend			= null
 		this._defaultModels		= null
 		this._built				= false
 	}
@@ -250,6 +252,7 @@ AiAssistant extends FloatPanel {
 			return
 		}
 		this._setKey( key )
+		this.onSend?.()
 
 		const
 		provider = this._provider()
