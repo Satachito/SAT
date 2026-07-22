@@ -205,11 +205,28 @@ createDevServer	= opts => {
 	const
 	attachWsReader	= socket => {
 		socket._buf = Buffer.alloc( 0 )
+		socket._frag = null		//	pending fragmented message: { opcode, parts }
+		const
+		dispatch	= ( opcode, payload ) => {
+			if	( opcode === 0x9 ) {	//	ping → pong ( control payload is ≤ 125 bytes )
+				socket.write( Buffer.concat( [ Buffer.from( [ 0x8a, payload.length ] ), payload ] ) )
+				return
+			}
+			if	( opcode !== 0x1 ) return	//	binary / pong: ignored
+			try {
+				const	msg = JSON.parse( payload.toString( 'utf8' ) )
+				if	( msg.type === 'editor-ready' ) setEditor( socket )
+				handleEditorMessage( msg )
+			} catch ( er ) {
+				log( 'bad ws json', er.message )
+			}
+		}
 		socket.on( 'data', chunk => {
 			socket._buf = Buffer.concat( [ socket._buf, chunk ] )
 			while	( socket._buf.length >= 2 ) {
 				const
-				opcode = socket._buf[ 0 ] & 0x0f
+				fin = ( socket._buf[ 0 ] & 0x80 ) !== 0
+				,	opcode = socket._buf[ 0 ] & 0x0f
 				,	masked = ( socket._buf[ 1 ] & 0x80 ) !== 0
 				let	len = socket._buf[ 1 ] & 0x7f
 				,	offset = 2
@@ -234,14 +251,20 @@ createDevServer	= opts => {
 				}
 				socket._buf = socket._buf.subarray( total )
 				if	( opcode === 0x8 ) { socket.destroy(); return }
-				if	( opcode === 0x1 ) {
-					try {
-						const	msg = JSON.parse( payload.toString( 'utf8' ) )
-						if	( msg.type === 'editor-ready' ) setEditor( socket )
-						handleEditorMessage( msg )
-					} catch ( er ) {
-						log( 'bad ws json', er.message )
+				//	browsers fragment messages over ~128 KiB: 0x1|0x2 FIN=0,
+				//	then 0x0 continuations; control frames may interleave
+				if	( opcode === 0x0 ) {
+					if	( !socket._frag ) continue	//	stray continuation
+					socket._frag.parts.push( Buffer.from( payload ) )
+					if	( fin ) {
+						const	{ opcode: op, parts } = socket._frag
+						socket._frag = null
+						dispatch( op, Buffer.concat( parts ) )
 					}
+				} else if	( !fin ) {
+					socket._frag = { opcode, parts: [ Buffer.from( payload ) ] }
+				} else {
+					dispatch( opcode, payload )
 				}
 			}
 		} )
