@@ -3,8 +3,9 @@
 //	Use as an element wrapping a sidebar section, or as a base class for panel
 //	components ( e.g. <ai-assistant> ). Prepends a head ( title + drag handle,
 //	meant to be shown only while floating ) and a float / dock button. When the
-//	panel sits inside <details>, the button is injected into the <summary>;
-//	otherwise it lives in the head.
+//	panel sits inside <details>, the button is injected into the <summary> and
+//	the head gets its own dock button ( so the floating panel can be stowed
+//	without going back to the sidebar ); otherwise the button lives in the head.
 //
 //	Attributes: title?, float-store? ( localStorage key persisting the state )
 //
@@ -85,8 +86,26 @@ FloatPanel extends HTMLElement {
 			this._setFloat( on )
 		}
 
+		if	( summary ) {
+			//	the summary button is out of reach while floating — give the
+			//	head its own dock button ( head shows only when floating )
+			const
+			dock = document.createElement( 'button' )
+			dock.type		= 'button'
+			dock.className	= 'float-btn'
+			dock.textContent	= '⤓'
+			dock.title		= 'Dock panel'
+			dock.setAttribute( 'aria-label', 'Dock panel' )
+			dock.onclick	= ev => {
+				ev.preventDefault()
+				ev.stopPropagation()
+				this._setFloat( false )
+			}
+			head.append( dock )
+		}
+
 		head.onpointerdown = ev => {
-			if	( !this.classList.contains( 'floating' ) || ev.target === btn ) return
+			if	( !this.classList.contains( 'floating' ) || ev.target.closest( 'button' ) ) return
 			const	r = this.getBoundingClientRect()
 			this._floatDrag = { dx: ev.clientX - r.left, dy: ev.clientY - r.top }
 			this.style.transform	= 'none'
