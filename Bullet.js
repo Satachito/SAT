@@ -176,6 +176,17 @@ Static = async ( Q, S, dir ) => {
 			await fs.promises.access( indexPath )
 
 			if ( ( await fs.promises.stat( indexPath ) ).isFile() ) {
+				//	Serving the index at a URL without the trailing slash leaves the browser
+				//	resolving the page's own relative links one level too high: a page at
+				//	/apps/kds asks for /apps/main.js instead of /apps/kds/main.js, and loads
+				//	unstyled and scriptless. Redirect first, as every other static server does.
+				const
+				url = new URL( Q.url, 'http://localhost' )
+				if ( !url.pathname.endsWith( '/' ) ) {
+					S.writeHead( 301, { Location: `${ url.pathname }/${ url.search }` } )
+					S.end()
+					return true
+				}
 				await SendFile( S, indexPath )
 				return true
 			}
