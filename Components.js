@@ -21,6 +21,11 @@ Spinner extends HTMLElement {
 }
 customElements.define( 'sat-spinner', Spinner )
 
+//	Calls CreatePromise and always returns a Promise,
+//	even if CreatePromise throws synchronously or returns a non-Promise value.
+const
+Start = ( $, ...args ) => new Promise( R => R( $.CreatePromise( ...args ) ) )
+
 export class
 Button extends HTMLButtonElement {
 	constructor() {
@@ -28,7 +33,7 @@ Button extends HTMLButtonElement {
 
 		this.onclick = e => (
 			this.disabled = true
-		,	this.CreatePromise( e ).finally(
+		,	Start( this, e ).finally(
 				() => this.disabled = false
 			)
 		)
@@ -47,20 +52,27 @@ OverlayButton extends HTMLButtonElement {
 		this.style.justifyContent	= 'center'
 		this.style.position			= 'relative'
 
-		this.onclick = () => this.CreateOverlay().then(
-			overlay => (
-				this.disabled = true
-			,	overlay.style.position	= 'absolute'
-			,	this.appendChild( overlay )
-			,	this.CreatePromise().finally(
-					() => (
-						this.removeChild( overlay )
-					,	this.disabled = false
-					)
+		//	Disable before CreateOverlay so a double click cannot start CreatePromise twice.
+		//	overlay.remove() works even if CreatePromise replaced the button's children.
+		this.onclick = e => {
+			this.disabled = true
+			let overlay
+			return Promise.resolve().then(
+				() => this.CreateOverlay()
+			).then(
+				_ => (
+					overlay = _
+				,	overlay.style.position	= 'absolute'
+				,	this.appendChild( overlay )
+				,	Start( this, e )
+				)
+			).finally(
+				() => (
+					overlay?.remove()
+				,	this.disabled = false
 				)
 			)
-		)
+		}
 	}
 }
 customElements.define( 'sat-overlay-button', OverlayButton, { extends: 'button' } )
-

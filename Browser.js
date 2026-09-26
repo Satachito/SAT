@@ -115,6 +115,7 @@ export const ReadInputAsDataURL		= _ => ReadInputAs( _, 'readAsDataURL'		)
 
 ////////////////////////////////////////////////////////////////
 
+//	Load / LoadText / LoadJSONable resolve to undefined when the picker is canceled.
 export const
 Load = options => window.showOpenFilePicker( options ).then(
 	pathes => Promise.all( pathes.map( path => path.getFile() ) )
@@ -123,10 +124,10 @@ Load = options => window.showOpenFilePicker( options ).then(
 )
 
 export const
-LoadText = options => Load( options ).then( files => Promise.all( files.map( file => file.text() ) ) )
+LoadText = options => Load( options ).then( files => files && Promise.all( files.map( file => file.text() ) ) )
 
 export const
-LoadJSONable = options => LoadText( options ).then( texts => Promise.all( texts.map( text => JSON.parse( text ) ) ) )
+LoadJSONable = options => LoadText( options ).then( texts => texts && texts.map( text => JSON.parse( text ) ) )
 
 export const
 Save = ( _, options ) => window.showSaveFilePicker( options ).then(
@@ -165,16 +166,16 @@ SaveJSONable = ( _, options ) => Save( JSON.stringify( _ ), options )
 //		}
 //	]
 //
-//	BUTTON_LOAD.onclick = () => LoadJSON(
+//	BUTTON_LOAD.onclick = () => LoadJSONable(
 //		{	multiple				: true
 //		,	types					: TYPES
 //		,	excludeAcceptAllOption	: true
 //		}
 //	).then(
-//		_ => DSC = _[ 0 ]
+//		_ => _ && ( DSC = _[ 0 ] )		//	undefined when canceled
 //	)
 //	
-//	BUTTON_SAVE.onclick = () => SaveJSON(
+//	BUTTON_SAVE.onclick = () => SaveJSONable(
 //		DSC
 //	,	{	types					: TYPES
 //		,	excludeAcceptAllOption	: true
